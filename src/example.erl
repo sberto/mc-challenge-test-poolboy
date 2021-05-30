@@ -7,34 +7,22 @@
 -export([start/2, stop/1]).
 -export([init/1]).
 % API
--export([ask/1, ask/2]).
+-export([ask/1]).
 
 %%%%%%%%%%%%%%%
 %% API
 %%%%%%%%%%%%%%%
 
 ask(Question) ->
-    spawn_link(fun() ->
-                  case poolboy:transaction(operator_pool,
-                                           fun(Worker) ->
-                                              gen_server:call(Worker, {answer, Question})
-                                           end,
-                                           1000)
-                  of
-                      busy -> send_to_user("Operators are busy!~n");
-                      Ans -> send_to_user(Ans)
-                  end
-               end),
-    ok.
-
-ask(Question, N) when N > 0 ->
-    ask(Question),
-    ask(Question, N - 1);
-ask(_Question, _N) ->
-    ok.
-
-send_to_user(Msg) ->
-    io:format("~p~n", [Msg]). % TODO
+    case poolboy:transaction(operator_pool,
+                            fun(Worker) ->
+                                gen_server:call(Worker, {answer, Question})
+                            end,
+                            1000)
+    of
+        busy -> "Operators are busy!~n";
+        Ans -> Ans
+    end.
 
 %%%%%%%%%%%%%%%
 %% REQUIRED
